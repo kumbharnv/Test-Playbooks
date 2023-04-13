@@ -1,6 +1,6 @@
 ---
 - name: Fetch user names and user IDs
-  hosts: <your_server_ip>
+  hosts: all
   become: true
 
   tasks:
