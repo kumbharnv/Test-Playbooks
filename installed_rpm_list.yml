@@ -14,12 +14,10 @@
         packages: "{{ rpm_packages | json_query('results[*].name') }}"
 
     - name: Create CSV file of RPM packages
-      csv:
-        path: /var/www/html/rpm_packages.csv
-        delimiter: ','
-        header_row: false
-        data:
-          - "{{ packages }}"
+      shell: |
+        cd /var/www/html/
+        {{ item }} >> rpm_package_list.csv
+      loop: "{{ packages }}"
 
     - name: Create HTTP path to CSV file
       set_fact:
