@@ -1,0 +1,30 @@
+---
+- name: Fetch installed RPM packages
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Get list of installed RPM packages
+      yum:
+        list: installed
+      register: rpm_packages
+
+    - name: Extract list of RPM packages
+      set_fact:
+        packages: "{{ rpm_packages | json_query('results[*].name') }}"
+
+    - name: Create CSV file of RPM packages
+      csv:
+        path: /var/www/html/rpm_packages.csv
+        delimiter: ','
+        header_row: false
+        data:
+          - "{{ packages }}"
+
+    - name: Create HTTP path to CSV file
+      set_fact:
+        http_path: "http://{{ ansible_default_ipv4.address }}/rpm_packages.csv"
+
+    - name: Display HTTP path to CSV file
+      debug:
+        var: http_path
