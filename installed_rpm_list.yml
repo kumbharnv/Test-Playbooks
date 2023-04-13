@@ -9,15 +9,10 @@
         list: installed
       register: rpm_packages
 
-    - name: Extract list of RPM packages
-      set_fact:
-        packages: "{{ rpm_packages | json_query('results[*].name') }}"
-
     - name: Create CSV file of RPM packages
       shell: |
         cd /var/www/html/
-        {{ item }} >> rpm_package_list.csv
-      loop: "{{ packages }}"
+        rpm -qa > rpm_package_list.csv
 
     - name: Create HTTP path to CSV file
       set_fact:
