@@ -1,0 +1,17 @@
+---
+- name: Fetch user names and user IDs
+  hosts: <your_server_ip>
+  become: true
+
+  tasks:
+    - name: Fetch user names and user IDs
+      command: "getent passwd"
+      register: passwd_output
+
+    - name: Extract user names and user IDs
+      set_fact:
+        users: "{{ passwd_output.stdout_lines | map('regex_replace', '^([^:]+):.*:(\\d+):.*$', '\\1 (\\2)') | list }}"
+
+    - name: Display user names and user IDs
+      debug:
+        var: users
