@@ -2,6 +2,9 @@
 - name: Create available packages list and email it
   hosts: all
   gather_facts: yes
+  vars:
+    package_cache_clear_timeout: 20
+    available_packages_file_path: "/tmp/available_packages.txt"
   tasks:
     - name: Clear package cache
       apt:
@@ -15,9 +18,9 @@
         clean_all: yes
       when: ansible_os_family == "RedHat"
 
-    - name: Wait for 10 seconds
+    - name: Wait for {{ package_cache_clear_timeout }} seconds
       wait_for:
-        timeout: 10
+        timeout: "{{ package_cache_clear_timeout }}"
 
     - name: Get available package list
       shell: "apt list --upgradeable" if ansible_os_family == "Debian" else "yum list updates"
@@ -26,7 +29,21 @@
     - name: Create available package file
       copy:
         content: "{{ available_packages.stdout }}"
-        dest: "/tmp/available_packages.txt"
+        dest: "{{ available_packages_file_path }}"
+      delegate_to: localhost
+
+    - name: Fetch available package file from remote hosts
+      fetch:
+        src: "{{ available_packages_file_path }}"
+        dest: "/tmp/{{ inventory_hostname }}_available_packages.txt"
+      delegate_to: localhost
+
+    - name: Create Excel file with package list
+      community.general.excel_sheet:
+        filename: "/tmp/available_packages.xlsx"
+        sheetname: "{{ inventory_hostname }}"
+        data: "{{ lookup('file', '/tmp/' + inventory_hostname + '_available_packages.txt') }}"
+        append: false
 
     - name: Email available package file
       mail:
@@ -34,4 +51,4 @@
         subject: "Available Packages List"
         body: "Please find attached the list of available packages"
         attach:
-          - "/tmp/available_packages.txt"
+          - "/tmp/available_packages.xlsx"
