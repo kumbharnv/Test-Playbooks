@@ -1,0 +1,37 @@
+---
+- name: Create available packages list and email it
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Clear package cache
+      apt:
+        autoclean: yes
+        autoremove: yes
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Clear package cache
+      yum:
+        clean_all: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Wait for 10 seconds
+      wait_for:
+        timeout: 10
+
+    - name: Get available package list
+      shell: "apt list --upgradeable" if ansible_os_family == "Debian" else "yum list updates"
+      register: available_packages
+
+    - name: Create available package file
+      copy:
+        content: "{{ available_packages.stdout }}"
+        dest: "/tmp/available_packages.txt"
+
+    - name: Email available package file
+      mail:
+        to: "nitin.kumbhar@kyndryl.com"
+        subject: "Available Packages List"
+        body: "Please find attached the list of available packages"
+        attach:
+          - "/tmp/available_packages.txt"
